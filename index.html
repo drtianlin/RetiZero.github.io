@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RetiZero1.0</title>
+    <style>
+        /* Your CSS styles */
+        body {
+            font-family: Arial, sans-serif;
+        }
+
+        .container {
+            text-align: center;
+            margin-top: 50px;
+        }
+
+        #question-image-container {
+            margin-bottom: 20px;
+            position: sticky;
+            top: 0;
+            background-color: white;
+            z-index: 1;
+        }
+
+        #question-image {
+            max-width: 400px;
+            height: 300px; /* 固定图片高度 */
+            cursor: pointer;
+        }
+
+        #options-container {
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .option {
+            flex: 0 0 calc(100% / 3 - 20px);
+            margin: 5px;
+            padding: 10px;
+            border: 1px solid #ccc;
+            cursor: pointer;
+        }
+
+        #next-button {
+            padding: 10px 20px;
+            cursor: pointer;
+        }
+
+        #result-container {
+            text-align: center;
+            margin-top: 50px;
+            display: none;
+        }
+
+        /* 放大图片效果 */
+        #overlay {
+            position: fixed;
+            top: 0;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background-color: rgba(0, 0, 0, 0.7);
+            z-index: 9999;
+            display: none;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #overlay img {
+            max-height: 80%;
+            max-width: 80%;
+            border: 5px solid white;
+            border-radius: 10px;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
+        }
+
+        /* Personal info form */
+        #personal-info-form {
+            display: none;
+        }
+
+        #personal-info-form input {
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <!-- HTML structure for quiz and overlay -->
+    <div class="container" id="quiz-container">
+        <!-- Question display -->
+        <div id="question-display">
+            <div id="instruction">请选择最可能的诊断</div>
+            <div id="instruction">单击图片查看细节</div>
+            <div id="question-number"></div>
+            <div id="question-image-container">
+                <img id="question-image" src="" alt="Question Image" onclick="showOverlay()">
+            </div>
+            <div id="options-container"></div>
+        </div>
+        
+        <!-- Personal info form -->
+        <div id="personal-info-form">
+            <h2>Please provide your personal information:</h2>
+            <input type="text" id="name" name="name" placeholder="Your Name/您的名字" required><br>
+            <input type="text" id="title" name="title" placeholder="Your Title/您的职称" required><br>
+            <input type="email" id="email" name="email" placeholder="Your Email/您的邮箱" required><br>
+            <button onclick="submitPersonalInfo()">Submit</button>
+        </div>
+
+        <!-- Result display -->
+        <div id="result-container">
+            <h2>Quiz Completed!</h2>
+            <h2>答题结果已保存至桌面</h2>
+            <h2>请将结果发送至邮箱lt@jsiec.org</h2>
+            <!-- <button id="download-result-button" onclick="downloadResult()">Download Result</button> -->
+        </div>
+
+        <!-- Overlay -->
+        <div id="overlay" onclick="hideOverlay()">
+            <img id="overlay-image" src="" alt="Overlay Image">
+        </div>
+    </div>
+
+    <!-- External JS library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.3/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+
+    <!-- Your JavaScript code -->
+    <script>
+        // JavaScript code for the quiz
+
+        // Array to store user responses
+        const userResponses = [];
+
+        // Array to store the paths of all images
+        const imagePaths = [
+            "RetiZero/1.JPG",
+            "RetiZero/2.png",
+            "RetiZero/3.jpg",
+            "RetiZero/4.JPG",
+            "RetiZero/5.png",
+            "RetiZero/6.JPG",
+            "RetiZero/7.JPG",
+            "RetiZero/8.png",
+            "RetiZero/9.png",
+            "RetiZero/10.png",
+            "RetiZero/11.JPG",
+            "RetiZero/12.png",
+            "RetiZero/13.JPG",
+            "RetiZero/14.JPG",
+            "RetiZero/15.png",
+            "RetiZero/16.png",
+            "RetiZero/17.JPG",
+            "RetiZero/18.JPG",
+            "RetiZero/19.JPG",
+            "RetiZero/20.JPG",
+            "RetiZero/21.JPG",
+            "RetiZero/22.JPG",
+            "RetiZero/23.JPG",
+            "RetiZero/24.png",
+            "RetiZero/25.JPG",
+            "RetiZero/26.JPG",
+            "RetiZero/27.JPG",
+            "RetiZero/28.png",
+            "RetiZero/29.png",
+            "RetiZero/30.JPG",
+            "RetiZero/31.JPG",
+            "RetiZero/32.JPG",
+            "RetiZero/33.JPG",
+            "RetiZero/34.JPG",
+            "RetiZero/35.png",
+            "RetiZero/36.JPG",
+            "RetiZero/37.JPG",
+            "RetiZero/38.JPG",
+            "RetiZero/39.png",
+            "RetiZero/40.png",
+            "RetiZero/41.JPG",
+            "RetiZero/42.jpg",
+            "RetiZero/43.jpg",
+            "RetiZero/44.JPG",
+            "RetiZero/45.JPG",
+            "RetiZero/46.JPG",
+            "RetiZero/47.JPG",
+            "RetiZero/48.JPG",
+            "RetiZero/49.JPG",
+            "RetiZero/50.JPG",
+            "RetiZero/51.JPG",
+            "RetiZero/52.png",
+            "RetiZero/53.JPG",
+            "RetiZero/54.png",
+            "RetiZero/55.JPG",
+            "RetiZero/56.JPG",
+            "RetiZero/57.png",
+            "RetiZero/58.JPG",
+            "RetiZero/59.png",
+            "RetiZero/60.png",
+            "RetiZero/61.JPG",
+            "RetiZero/62.JPG",
+            "RetiZero/63.JPG",
+            "RetiZero/64.JPG",
+            "RetiZero/65.JPG",
+            "RetiZero/66.JPG",
+            "RetiZero/67.png",
+            "RetiZero/68.png",
+            "RetiZero/69.JPG",
+            "RetiZero/70.JPG",
+            "RetiZero/71.JPG",
+            "RetiZero/72.JPG",
+            "RetiZero/73.JPG",
+            "RetiZero/74.JPG",
+            "RetiZero/75.JPG",
+            "RetiZero/76.JPG",
+            "RetiZero/77.JPG",
+            "RetiZero/78.JPG",
+            "RetiZero/79.JPG",
+            "RetiZero/80.JPG",
+            "RetiZero/81.png",
+            "RetiZero/82.JPG",
+            "RetiZero/83.png",
+            "RetiZero/84.JPG",
+            "RetiZero/85.jpg",
+            "RetiZero/86.JPG",
+            "RetiZero/87.png",
+            "RetiZero/88.jpg",
+            "RetiZero/89.JPG",
+            "RetiZero/90.png",
+            "RetiZero/91.JPG",
+            "RetiZero/92.JPG",
+            "RetiZero/93.JPG",
+            "RetiZero/94.jpg",
+            "RetiZero/95.JPG",
+            "RetiZero/96.png",
+            "RetiZero/97.JPG",
+            "RetiZero/98.png",
+            "RetiZero/99.png",
+            "RetiZero/100.JPG",
+            "RetiZero/101.JPG",
+            "RetiZero/102.jpg",
+            "RetiZero/103.JPG",
+            "RetiZero/104.JPG",
+            // Add more image paths as needed
+        ];
+
+        // Array of fixed options for all questions
+        const options = [
+            "0.Acute Posterior Multifocal Placoid Pigment Epitheliopathy",
+            "1.Acute Retinal Necrosis",
+            "2.Albinism",
+            "3.Angioid Streaks",
+            "4.Asteroid Hyalosis",
+            "5.Behcet disease",
+            "6.BEST disease",
+            "7.Bietti Crystalline Dystrophy",
+            "8.Branch Retinal Vein Occlusion",
+            "9.Central Retinal Vein Occlusion",
+            "10.Central Serous Chorioretinopathy",
+            "11.Chorioretinal Coloboma",
+            "12.Choroidal Metastasis",
+            "13.Choroidal Rupture",
+            "14.Commotio Retinae",
+            "15.Moderate Non-Proliferative Diabetic Retinopathy",
+            "16.Severe Non-Proliferative Diabetic Retinopathy",
+            "17.Proliferative Diabetic Retinopathy",
+            "18.Epiretinal Membrane",
+            "19.Geographic Atrophy",
+            "20.Glaucoma",
+            "21.Hypertensive Retinopathy",
+            "22.Intraocular Foreign Body",
+            "23.Leber Congenital Amaurosis",
+            "24.Leukemic Retinopathy",
+            "25.Lipemia Retinalis",
+            "26.Macular Hole",
+            "27.Morning Glory Anomaly",
+            "28.Multiple Evanescent White-Dot Syndromes",
+            "29.Myelinated Nerve Fiber",
+            "30.Neovascular Age-related Macular Degeneration",
+            "31.Normal",
+            "32.Optic Atrophy",
+            "33.Optic Disc Coloboma",
+            "34.Pathologic Myopia",
+            "35.Pigmented Paravenous Retinochoroidal Atrophy",
+            "36.Polypoidal Choroidal Vasculopathy",
+            "37.Presumed Ocular Histoplasmosis Syndrome",
+            "38.Punctate Inner Choroidopathy_Multifocal Choroiditis",
+            "39.Purtscher Retinopathy",
+            "40.Retinal Arterial Macroaneurysm",
+            "41.Retinal Detachment",
+            "42.Retinal Racemose Hemangioma",
+            "43.Retinitis Pigmentosa",
+            "44.Retinoblastoma",
+            "45.Roth Spots",
+            "46.Serpiginous Choroidopathy",
+            "47.Stargardt disease",
+            "48.Syphilitic Uveitis",
+            "49.Valsalva Retinopathy",
+            "50.Vogt-Koyanagi-Harada disease",
+            "51.X-linked Retinoschisis",    
+            // Options list
+        ];
+
+        // Variable to keep track of current question index
+        let currentQuestionIndex = 0;
+
+        // Variable to store start time of the quiz
+        let quizStartTime;
+
+        // Function to load the next question
+        function loadNextQuestion() {
+            if (currentQuestionIndex < imagePaths.length) {
+                const questionNumber = document.getElementById("question-number");
+                questionNumber.innerText = `第 ${currentQuestionIndex + 1} 题`;
+
+                const imagePath = imagePaths[currentQuestionIndex];
+                const questionImage = document.getElementById("question-image");
+                questionImage.src = imagePath;
+
+                // Clear previous options
+                const optionsContainer = document.getElementById("options-container");
+                optionsContainer.innerHTML = "";
+
+                // Add options dynamically
+                options.forEach(option => {
+                    const optionElement = document.createElement("div");
+                    optionElement.classList.add("option");
+                    optionElement.innerText = option;
+                    optionElement.addEventListener("click", handleOptionClick);
+                    optionsContainer.appendChild(optionElement);
+                });
+
+                // Increment question index
+                currentQuestionIndex++;
+
+                // Start the timer if it's the first question
+                if (currentQuestionIndex === 1) {
+                    quizStartTime = new Date();
+                }
+            } else {
+                // Hide question display
+                document.getElementById("question-display").style.display = "none";
+
+                // Show personal info form
+                document.getElementById("personal-info-form").style.display = "block";
+            }
+        }
+
+        // Function to handle option click
+        function handleOptionClick(event) {
+            const selectedOption = event.target.innerText;
+            userResponses.push(selectedOption);
+            loadNextQuestion();
+        }
+
+        // Function to download result as Excel file
+        function downloadResult() {
+            const wb = XLSX.utils.book_new();
+            const ws = XLSX.utils.aoa_to_sheet([["姓名", "职称", "邮箱", "问题", "答案", "答题时间 (秒)"]]);
+
+            // Add user information and quiz results to the worksheet
+            const name = document.getElementById("name").value;
+            const title = document.getElementById("title").value;
+            const email = document.getElementById("email").value;
+
+            userResponses.forEach((response, index) => {
+                const timeTaken = Math.round((new Date() - quizStartTime) / 1000); // Calculate time taken in seconds
+                XLSX.utils.sheet_add_aoa(ws, [[name, title, email, `问题 ${index + 1}`, response, timeTaken]], {origin: -1});
+            });
+
+            XLSX.utils.book_append_sheet(wb, ws, "Quiz Result");
+            const wbout = XLSX.write(wb, {bookType:'xlsx',  type: 'binary'});
+
+            function s2ab(s) {
+                const buf = new ArrayBuffer(s.length);
+                const view = new Uint8Array(buf);
+                for (let i = 0; i != s.length; ++i) view[i] = s.charCodeAt(i) & 0xFF;
+                return buf;
+            }
+
+            saveAs(new Blob([s2ab(wbout)],{type:"application/octet-stream"}), 'quiz_result.xlsx');
+        }
+
+        // Function to submit personal information
+        function submitPersonalInfo() {
+            const name = document.getElementById("name").value;
+            const title = document.getElementById("title").value;
+            const email = document.getElementById("email").value;
+
+            if (name && title && email) {
+                // Hide personal info form
+                document.getElementById("personal-info-form").style.display = "none";
+
+                // Display result container
+                document.getElementById("result-container").style.display = "block";
+
+                // Trigger download result function
+                downloadResult();
+            } else {
+                alert("请填写完整个人信息！");
+            }
+        }
+
+        // Function to show overlay with enlarged image
+        function showOverlay() {
+            const overlay = document.getElementById("overlay");
+            const overlayImage = document.getElementById("overlay-image");
+            const questionImage = document.getElementById("question-image");
+            overlayImage.src = questionImage.src;
+            overlay.style.display = "flex";
+        }
+
+        // Function to hide overlay
+        function hideOverlay() {
+            const overlay = document.getElementById("overlay");
+            overlay.style.display = "none";
+        }
+
+        // Load the first question when the page loads
+        window.onload = function() {
+            loadNextQuestion();
+        };
+
+        // Start the quiz when the page is loaded
+        window.onload = loadNextQuestion;
+    </script>
+</body>
+</html>
